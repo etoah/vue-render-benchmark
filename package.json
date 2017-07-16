@@ -1,0 +1,19 @@
+{
+  "name": "vue-ssr-render-benchmark",
+  "version": "0.0.1",
+  "description": "vue ",
+  "main": "index.js",
+  "scripts": {
+    "test": "mocha test/**/*.test.js  -r test/env   --recursive"
+  },
+  "author": "lucienduan",
+  "license": "ISC",
+  "dependencies": {
+    "vue": "^2.4.1",
+    "vue-server-renderer": "^2.4.1"
+  },
+  "devDependencies": {
+    "mocha": "^3.4.2",
+    "should": "^11.2.1"
+  }
+}
