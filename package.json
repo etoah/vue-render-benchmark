@@ -9,6 +9,8 @@
   "author": "lucienduan",
   "license": "ISC",
   "dependencies": {
+    "comps": "^2.3.4",
+    "comps-autonode-addons": "^1.0.9",
     "vue": "^2.4.1",
     "vue-server-renderer": "^2.4.1"
   },

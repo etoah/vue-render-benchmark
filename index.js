@@ -1,27 +1,90 @@
-var SSR = require('vue-server-renderer').createRenderer();
-var Vue = require('vue');
-var Engine= require('@tencent/aga-vue-render')
-var Aga = new Engine()
+const SSR = require('vue-server-renderer').createRenderer();
+const Vue = require('vue');
+const Engine= require('@tencent/aga-vue-render')
+const Aga = new Engine()
+
+const comps = require('comps')
+const compsAutonodeAddons = require('comps-autonode-addons')
+compsAutonodeAddons(comps)
+comps.componentLoader(function(name, tpl){
+    return {
+        request: name,
+        content: tpl
+    }
+})
 
 
-var tplStr = [
-    '<div>',
-    '<nav class="ui-nav j-tabs">',
-    '<button v-for="(tab, index) in data.tabList" class="item-nav" :class="{current: data.curTab === tab.id}">{{tab.name}}</button>',
-    '</nav>',
-    '<main class="gift-list">',
-    '<ul>',
-    '<li class="item" ',
-        'v-for="(item, index) in data.curList.items" ',
-        ':class="{\'vip-item\': item.type === 15, \'valentine-gift\': item.type === 16}" ',
-        ':style="{display: (data.platform === \'aa\' && item.isMusic) || (data.forbidden && [233, 221, 222].indexOf(item.id) !== -1) ? \'none\' : \'inline-block\'}">',
-    '<i class="gift-pic" :style="{\'background-image\': \'url(//test.test.com/cdn/\' + item.id % 16 + \'/\' + item.id + (item.format === \'gif\' ? \'_100.gif\' : \'_100.png\') + \')\'}"></i>',
-    '<span class="gift-name">{{item.name}}</span> ',
-    '</li>',
-    '</ul>',
-    '</main>',
-    '</div>'
-].join('');
+
+var infoTpl = `
+    <ul class="list gift">
+        <li class="item" 
+            v-for="(item, index) in data.curList.items" 
+            :class="{'vip-item': item.type === 15, 'valentine-gift': item.type === 16}" >
+            <span class="gift-name">{{item.name}}</span> 
+        </li>
+    </ul>
+`
+// var infoCompsTpl = `
+//     <ul class="list gift">
+//         {% foreach $arr="data.curList.items" $as="item" $index="index"%} 
+//             <li class="item"
+//             class="\${item.type === 15?'vip-item':''} \${item.type === 16?'valentine-gift':''}" >
+//             <span class="gift-name">\${item.name}</span> 
+//             </li>
+//         {% /foreach %}   
+//     </ul>
+// `
+
+// var tpl = comps({ template: infoCompsTpl })
+// var infoRender = new Function('data', 'return \`' + tpl + '\`')
+// console.log(infoRender.toString())
+
+
+
+var compsTplStr = `
+<div>
+    <nav class="ui-nav j-tabs">
+        {% foreach $arr="data.tabList" $as="tab" $index="index"%} 
+            <button class="item-nav \${data.curTab === tab.id ? 'current': ''}" :class="{current: }">
+            \${tab.name}
+            </button>
+        {% /foreach %} 
+    </nav>
+    {% component $id="info" with="{data: data}" /%}
+    <div class="gift-list">
+    <ul class="list gift">
+        {% foreach $arr="data.curList.items" $as="item" $index="index"%} 
+            <li class="item"
+            class="\${item.type === 15?'vip-item':''} \${item.type === 16 ? 'valentine-gift' : ''}" >
+            <span class="gift-name">\${item.name}</span> 
+            </li>
+        {% /foreach %}   
+    </ul>
+    </div>
+</div>
+`
+
+
+
+var tplStr = `
+<div>
+    <nav class="ui-nav j-tabs">
+        <button v-for="(tab, index) in data.tabList" class="item-nav" :class="{current: data.curTab === tab.id}">
+        {{tab.name}}
+        </button>
+    </nav>
+    <info :data='data'></info>
+    <div class="gift-list">
+        <ul class="list gift">
+            <li class="item" 
+                v-for="(item, index) in data.curList.items" 
+                :class="{'vip-item': item.type === 15, 'valentine-gift': item.type === 16}" >
+                <span class="gift-name">{{item.name}}</span> 
+            </li>
+        </ul>
+    </div>
+</div>
+`
 
 var data = {
     platform: 'aa',
@@ -31,18 +94,32 @@ var data = {
         items: []
     }
 };
-for(var i = 0; i < 30; i++) data.curList.items.push({
+
+
+
+var htmlStr = '';
+for(var i = 0; i < 5; i++) data.curList.items.push({
     id: 1,
     type: 2,
-    name: 'test',
+    name: Math.random()
+        .toString(36)
+        .substring(2, 
+            2+ Math.ceil(Math.random()*10)),
     isMusic: false,
     format: 'png'
 });
 
+Aga.component({
+    name: 'info',
+    template: infoTpl,
+    props: ['data']
+})
 
-var htmlStr = '';
-
-var t0 = Date.now();
+var info = Vue.component('info', {
+    name: 'info',
+    template: infoTpl,
+    props: ['data']
+})
 
 Aga.component({
     name: 'testComp',
@@ -50,31 +127,31 @@ Aga.component({
     props: ['data']
 })
 
-for(var i = 0; i < 10000; i++) {
-    htmlStr = Aga.render('testComp', {data: data})
-}
-
-console.log(htmlStr);
-console.log('Aga vue render: ', Date.now() - t0, 'ms');
-
 var vueObj = new Vue({
     template: tplStr,
     data: {
         data: data
+    },
+    components: {
+        info
     }
 });
 
-var t1 = Date.now();
+ 
 
-for(var i = 0; i < 10000; i++) {
-    SSR.renderToString(vueObj, function(error, bodyStr) {
+benchmark({
+    'Aga-vue-render': function(){
+        htmlStr = Aga.render('testComp', {data: data})
+        //console.log('===== Aga-vue-render',htmlStr)
+    },
+    'vue-server-render': function(){
+        SSR.renderToString(vueObj, function(error, bodyStr) {
         if (error) {
             console.log('模板渲染错误');
         } else {
             htmlStr = bodyStr;
+            //console.log('----vue-server-render',htmlStr)
         }
     });
-}
-
-//console.log(htmlStr);
-console.log('vue-server-render: ', Date.now() - t1, 'ms');
+    }
+}, 1e4)
