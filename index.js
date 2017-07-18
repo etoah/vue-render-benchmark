@@ -3,16 +3,6 @@ const Vue = require('vue');
 const Engine= require('@tencent/aga-vue-render')
 const Aga = new Engine()
 
-const comps = require('comps')
-const compsAutonodeAddons = require('comps-autonode-addons')
-compsAutonodeAddons(comps)
-comps.componentLoader(function(name, tpl){
-    return {
-        request: name,
-        content: tpl
-    }
-})
-
 
 
 var infoTpl = `
@@ -23,45 +13,6 @@ var infoTpl = `
             <span class="gift-name">{{item.name}}</span> 
         </li>
     </ul>
-`
-// var infoCompsTpl = `
-//     <ul class="list gift">
-//         {% foreach $arr="data.curList.items" $as="item" $index="index"%} 
-//             <li class="item"
-//             class="\${item.type === 15?'vip-item':''} \${item.type === 16?'valentine-gift':''}" >
-//             <span class="gift-name">\${item.name}</span> 
-//             </li>
-//         {% /foreach %}   
-//     </ul>
-// `
-
-// var tpl = comps({ template: infoCompsTpl })
-// var infoRender = new Function('data', 'return \`' + tpl + '\`')
-// console.log(infoRender.toString())
-
-
-
-var compsTplStr = `
-<div>
-    <nav class="ui-nav j-tabs">
-        {% foreach $arr="data.tabList" $as="tab" $index="index"%} 
-            <button class="item-nav \${data.curTab === tab.id ? 'current': ''}" :class="{current: }">
-            \${tab.name}
-            </button>
-        {% /foreach %} 
-    </nav>
-    {% component $id="info" with="{data: data}" /%}
-    <div class="gift-list">
-    <ul class="list gift">
-        {% foreach $arr="data.curList.items" $as="item" $index="index"%} 
-            <li class="item"
-            class="\${item.type === 15?'vip-item':''} \${item.type === 16 ? 'valentine-gift' : ''}" >
-            <span class="gift-name">\${item.name}</span> 
-            </li>
-        {% /foreach %}   
-    </ul>
-    </div>
-</div>
 `
 
 
@@ -137,21 +88,28 @@ var vueObj = new Vue({
     }
 });
 
- 
+//console.log(Aga.serialize())
+
+var autonodeRender = require('./autonode')
 
 benchmark({
     'Aga-vue-render': function(){
         htmlStr = Aga.render('testComp', {data: data})
         //console.log('===== Aga-vue-render',htmlStr)
     },
+    'comps-autonode': function(){
+        htmlStr = autonodeRender(data)
+        //console.log('===== autonodeRender',htmlStr)
+    },
     'vue-server-render': function(){
         SSR.renderToString(vueObj, function(error, bodyStr) {
-        if (error) {
-            console.log('模板渲染错误');
-        } else {
-            htmlStr = bodyStr;
-            //console.log('----vue-server-render',htmlStr)
-        }
-    });
+            if (error) {
+                console.log('模板渲染错误');
+            } else {
+                htmlStr = bodyStr;
+                //console.log('----vue-server-render',htmlStr)
+            }
+        });
     }
-}, 1e4)
+
+}, 1e5) 
