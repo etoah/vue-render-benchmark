@@ -2,6 +2,7 @@ const SSR = require('vue-server-renderer').createRenderer();
 const Vue = require('vue');
 const Engine= require('@tencent/aga-vue-render')
 const Aga = new Engine()
+//const Aga = new Engine(require('./.dist/aga.output'))
 
 
 
@@ -65,6 +66,11 @@ Aga.component({
     template: infoTpl,
     props: ['data']
 })
+Aga.component({
+    name: 'testComp',
+    template: tplStr,
+    props: ['data']
+})
 
 var info = Vue.component('info', {
     name: 'info',
@@ -72,11 +78,7 @@ var info = Vue.component('info', {
     props: ['data']
 })
 
-Aga.component({
-    name: 'testComp',
-    template: tplStr,
-    props: ['data']
-})
+
 
 var vueObj = new Vue({
     template: tplStr,
@@ -88,14 +90,16 @@ var vueObj = new Vue({
     }
 });
 
-//console.log(Aga.serialize())
+//require('fs').writeFileSync('./.dist/aga.output', Aga.serialize())
 
 var autonodeRender = require('./autonode')
+
+//console.log(vueObj)
 
 benchmark({
     'Aga-vue-render': function(){
         htmlStr = Aga.render('testComp', {data: data})
-        //console.log('===== Aga-vue-render',htmlStr)
+       // console.log('===== Aga-vue-render',htmlStr)
     },
     'comps-autonode': function(){
         htmlStr = autonodeRender(data)
@@ -113,3 +117,4 @@ benchmark({
     }
 
 }, 1e5) 
+//}, 1) 
